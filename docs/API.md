@@ -2,7 +2,7 @@
 
 Alle Tools sind **nur lesend** (`readOnlyHint: true`). Datumsangaben im Format `yyyy-MM-dd`. Ohne `from`/`to` gilt das laufende Kalenderjahr bis heute.
 
-Personendaten in den Antworten werden standardmäßig reduziert (Pseudonyme für Namen, Adressen und Steuer-IDs entfernt). Abschalten nur mit `LEXWARE_REDACT=0`, siehe README.
+Auswertungen unterdrücken Gruppen mit weniger als 5 Kunden (`LEXWARE_MIN_GROUP`, `1` schaltet das ab). Personendaten in den Antworten werden standardmäßig reduziert (Pseudonyme für Namen, Adressen und Steuer-IDs entfernt). Abschalten nur mit `LEXWARE_REDACT=0`, siehe README.
 
 Antworten kommen als JSON-Text. Fehler kommen als Tool-Fehler mit `isError: true` und einer Meldung ohne Schlüssel oder Zugangsdaten.
 
@@ -112,7 +112,7 @@ Offene Posten nach Tagen seit Fälligkeit. Berücksichtigt Rechnungen, Gutschrif
 | `from` | Datum | nein | Belegdatum ab |
 | `to` | Datum | nein | Belegdatum bis |
 
-Antwort: `buckets` mit `notDue`, `1-30`, `31-60`, `61-90`, `over90` (je `total` und `count`), dazu `grandTotal` und `count`.
+Antwort: `buckets` mit `notDue`, `1-30`, `31-60`, `61-90`, `over90` (je `total` und `count`), dazu `grandTotal` und `count`. Ein Bucket mit weniger als 5 verschiedenen Kunden liefert `total: null, count: null, suppressed: true`.
 
 ### `lexware_revenue_by_month`
 
@@ -123,19 +123,18 @@ Brutto-Umsatz je Kalendermonat aus Rechnungen abzüglich Gutschriften. Entwürfe
 | `from` | Datum | nein | Belegdatum ab |
 | `to` | Datum | nein | Belegdatum bis |
 
-Antwort: Liste aus `{ month: "YYYY-MM", gross, count }`.
+Antwort: Liste aus `{ month: "YYYY-MM", gross, count }`. Ein Monat mit weniger als 5 verschiedenen Kunden liefert `gross: null, count: null, suppressed: true`.
 
-### `lexware_top_customers`
+### `lexware_customer_concentration`
 
-Kunden nach Brutto-Umsatz im Zeitraum, mit Anteil am Gesamtumsatz in Prozent.
+Wie stark der Umsatz von wenigen Kunden abhängt. Liefert die Anzahl der Kunden und die Anteile der drei größten als Klassen von 10 Prozentpunkten (z. B. „40–50 %“). Keine Namen, keine Beträge.
 
 | Parameter | Typ | Pflicht | Beschreibung |
 |---|---|---|---|
 | `from` | Datum | nein | Belegdatum ab |
 | `to` | Datum | nein | Belegdatum bis |
-| `limit` | integer 1–50 | nein | Standard: 10 |
 
-Antwort: Liste aus `{ contactName, gross, count, sharePercent }`.
+Antwort: `customerCount`, `topShares` als Liste aus `{ rank, shareBand }`. Unter der Mindestgruppengröße: `suppressed: true`.
 
 ### `lexware_vat_summary`
 
@@ -146,7 +145,7 @@ Netto- und Steuerbeträge je Steuersatz für Umsatzsteuer-Übersichten. Lädt je
 | `from` | Datum | nein | Belegdatum ab |
 | `to` | Datum | nein | Belegdatum bis |
 
-Antwort: Liste aus `{ taxRatePercentage, net, tax }`. Entwürfe und stornierte Belege sind ausgenommen.
+Antwort: Liste aus `{ taxRatePercentage, net, tax }`. Ein Steuersatz mit weniger als 5 Rechnungen liefert `net: null, tax: null, suppressed: true`. Entwürfe und stornierte Belege sind ausgenommen.
 
 > Die Übersicht ist eine Hilfe für die Vorbereitung, kein Steuerbescheid. Prüfe sie mit deiner Steuerberatung.
 

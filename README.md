@@ -52,13 +52,13 @@ Die vollständige Tool-Referenz mit Parametern steht in [docs/API.md](docs/API.m
 |---|---|
 | Stammdaten | `lexware_profile`, `lexware_search_contacts`, `lexware_get_contact`, `lexware_search_articles` |
 | Belege | `lexware_list_vouchers`, `lexware_get_invoice` |
-| Auswertungen | `lexware_aging_report`, `lexware_revenue_by_month`, `lexware_top_customers`, `lexware_vat_summary` |
+| Auswertungen | `lexware_aging_report`, `lexware_revenue_by_month`, `lexware_customer_concentration`, `lexware_vat_summary` |
 
 Beispiel-Fragen:
 
 - „Welche Rechnungen sind seit mehr als 30 Tagen überfällig?“
 - „Wie hat sich der Umsatz im ersten Quartal entwickelt?“
-- „Wer sind meine fünf größten Kunden dieses Jahr?“
+- „Wie stark hängt der Umsatz von wenigen Kunden ab?“
 - „Erstelle eine Umsatzsteuer-Übersicht nach Steuersätzen für Q1.“
 
 ## Grenzen
@@ -66,6 +66,14 @@ Beispiel-Fragen:
 - **Rate Limit:** Lexware erlaubt etwa 2 Anfragen pro Sekunde. Der Connector drosselt automatisch und wiederholt bei HTTP 429.
 - **Große Zeiträume:** Für Netto- und USt-Auswertungen lädt der Connector je Rechnung ein Detail nach. Bei vielen Rechnungen dauert das. Nutze kürzere Zeiträume.
 - **Kein Schreibzugriff** in dieser Version.
+
+## Mindestgruppengröße
+
+Auswertungen zeigen Gruppen erst ab **5 verschiedenen Kunden** (Standard). Kleinere Gruppen werden unterdrückt, weil eine Zahl aus einem oder zwei Kunden oft auf eine Person zurückführt. Der Wert ist mit `LEXWARE_MIN_GROUP` einstellbar, `1` schaltet die Schwelle aus.
+
+Die Kundenkonzentration gibt keine Namen und keine Beträge aus, nur Anteilsklassen der drei größten Kunden.
+
+Auch mit Schwelle ist eine Auswertung nicht garantiert anonym. Bei kleinen Kundenstämmen lässt sich aus Kombinationen weiterhin etwas schließen.
 
 ## Personendaten reduzieren
 

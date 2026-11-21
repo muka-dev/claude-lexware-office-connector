@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { LexwareClient } from "./lexoffice/client.js";
 import { createServer } from "./server.js";
 import { Redactor, redactionEnabled } from "./redact/index.js";
+import { parseMinGroup } from "./analytics/index.js";
 
 async function main() {
   const apiKey = process.env.LEXOFFICE_API_KEY ?? "";
@@ -16,6 +17,8 @@ async function main() {
   const server = createServer({
     client,
     redact: redactOn ? (v) => redactor.redact(v) : undefined,
+    // Evaluations hide groups with fewer distinct customers than this (default 5).
+    minGroupSize: parseMinGroup(process.env.LEXWARE_MIN_GROUP),
   });
   await server.connect(new StdioServerTransport());
 }

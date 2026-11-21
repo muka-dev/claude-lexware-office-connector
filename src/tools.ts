@@ -3,8 +3,9 @@ import type { LexwareClient, QueryValue } from "./lexoffice/client.js";
 import {
   agingReport,
   revenueByMonth,
-  topCustomers,
+  customerConcentration,
   vatSummary,
+  DEFAULT_MIN_GROUP,
   SALES_VOUCHER_TYPES,
   type InvoiceDetail,
   type VoucherListItem,
@@ -17,6 +18,8 @@ export interface ToolContext {
   maxInvoiceDetails?: number;
   /** Optional redaction applied to successful results before they leave the connector. */
   redact?: (value: unknown) => unknown;
+  /** Minimum group size for evaluations (default 5). 1 disables the threshold. */
+  minGroupSize?: number;
 }
 
 export interface ToolDef {
@@ -37,6 +40,7 @@ const ymd = (d: Date) => d.toISOString().slice(0, 10);
 export function buildTools(ctx: ToolContext): ToolDef[] {
   const today = ctx.today ?? (() => new Date());
   const maxDetails = ctx.maxInvoiceDetails ?? 200;
+  const minGroup = ctx.minGroupSize ?? DEFAULT_MIN_GROUP;
   const detailCache = new Map<string, InvoiceDetail>();
 
   const range = (args: { from?: string; to?: string }) => {
@@ -123,24 +127,20 @@ export function buildTools(ctx: ToolContext): ToolDef[] {
       name: "lexware_aging_report",
       description: "Open receivables (Offene Posten) grouped by days past due: not due, 1-30, 31-60, 61-90, over 90 days.",
       inputSchema: { from: isoDate.optional(), to: isoDate.optional() },
-      handler: async (args) => agingReport(await listSales({ ...args, voucherType: ["invoice", "creditnote", "downpaymentinvoice"] }), today()),
+      handler: async (args) =>
+        agingReport(await listSales({ ...args, voucherType: ["invoice", "creditnote", "downpaymentinvoice"] }), today(), minGroup),
     },
     {
       name: "lexware_revenue_by_month",
       description: "Gross revenue per calendar month from invoices minus credit notes. Drafts and voided documents are excluded.",
       inputSchema: { from: isoDate.optional(), to: isoDate.optional() },
-      handler: async (args) => revenueByMonth(await listSales({ ...args, voucherType: ["invoice", "creditnote"] })),
+      handler: async (args) => revenueByMonth(await listSales({ ...args, voucherType: ["invoice", "creditnote"] }), minGroup),
     },
     {
-      name: "lexware_top_customers",
-      description: "Top customers by gross revenue in a period, with share of total revenue.",
-      inputSchema: {
-        from: isoDate.optional(),
-        to: isoDate.optional(),
-        limit: z.number().int().min(1).max(50).optional(),
-      },
-      handler: async (args) =>
-        topCustomers(await listSales({ ...args, voucherType: ["invoice", "creditnote"] }), args.limit ?? 10),
+      name: "lexware_customer_concentration",
+      description: "How concentrated revenue is: number of customers and the share of total revenue held by the three largest, as 10-point bands (for example 40–50 %). Names and amounts are not returned. Suppressed below the minimum group size.",
+      inputSchema: { from: isoDate.optional(), to: isoDate.optional() },
+      handler: async (args) => customerConcentration(await listSales({ ...args, voucherType: ["invoice", "creditnote"] }), minGroup),
     },
     {
       name: "lexware_vat_summary",
@@ -154,7 +154,7 @@ export function buildTools(ctx: ToolContext): ToolDef[] {
         }
         const details: InvoiceDetail[] = [];
         for (const c of candidates) details.push(await invoiceDetail(c.id));
-        return vatSummary(details);
+        return vatSummary(details, minGroup);
       },
     },
   ];
