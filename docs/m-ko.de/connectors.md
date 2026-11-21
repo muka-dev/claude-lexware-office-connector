@@ -11,14 +11,14 @@ Hier entsteht eine Sammlung von Connectoren für diese Systeme. Jeder Connector 
 ### Lexware Office (lexoffice)
 
 **Status:** Version 0.1, lesend, kostenlos, MIT-Lizenz.
-**Repo:** [github.com/muka-dev/claude-lexoffice-connector](https://github.com/muka-dev/claude-lexoffice-connector)
+**Repo:** [github.com/muka-dev/claude-lexware-office-connector](https://github.com/muka-dev/claude-lexware-office-connector)
 
 **Was er kann**
 
 - Firmenprofil, Kunden und Lieferanten suchen
 - Rechnungen, Gutschriften, Angebote und Auftragsbestätigungen auflisten und einzeln abrufen
 - Artikel suchen
-- Auswertungen: offene Posten nach Fälligkeit, Umsatz je Monat, Top-Kunden, Umsatzsteuer nach Steuersätzen
+- Auswertungen: offene Posten nach Fälligkeit, Umsatz je Monat, Kundenkonzentration (nur Anteilsklassen, keine Namen), Umsatzsteuer nach Steuersätzen. Gruppen mit weniger als fünf Kunden werden ausgeblendet.
 
 **Was er bewusst nicht kann**
 
@@ -32,7 +32,7 @@ Hier entsteht eine Sammlung von Connectoren für diese Systeme. Jeder Connector 
 
 **Installation**
 
-Voraussetzungen: Node.js 22 oder neuer und ein API-Key aus Lexware Office. Die Schritt-für-Schritt-Anleitung steht im [README](https://github.com/muka-dev/claude-lexoffice-connector#installation). Die Tool-Referenz steht in der [API-Dokumentation](https://github.com/muka-dev/claude-lexoffice-connector/blob/main/docs/API.md).
+Voraussetzungen: Node.js 22 oder neuer und ein API-Key aus Lexware Office. Die Schritt-für-Schritt-Anleitung steht im [README](https://github.com/muka-dev/claude-lexware-office-connector#installation). Die Tool-Referenz steht in der [API-Dokumentation](https://github.com/muka-dev/claude-lexware-office-connector/blob/main/docs/API.md).
 
 **Beispiel-Fragen an Claude**
 
