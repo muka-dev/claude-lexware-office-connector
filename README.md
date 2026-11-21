@@ -52,13 +52,13 @@ Die vollständige Tool-Referenz mit Parametern steht in [docs/API.md](docs/API.m
 |---|---|
 | Stammdaten | `lexware_profile`, `lexware_search_contacts`, `lexware_get_contact`, `lexware_search_articles` |
 | Belege | `lexware_list_vouchers`, `lexware_get_invoice` |
-| Auswertungen | `lexware_aging_report`, `lexware_revenue_by_month`, `lexware_top_customers`, `lexware_vat_summary` |
+| Auswertungen | `lexware_aging_report`, `lexware_revenue_by_month`, `lexware_customer_concentration`, `lexware_vat_summary` |
 
 Beispiel-Fragen:
 
 - „Welche Rechnungen sind seit mehr als 30 Tagen überfällig?“
 - „Wie hat sich der Umsatz im ersten Quartal entwickelt?“
-- „Wer sind meine fünf größten Kunden dieses Jahr?“
+- „Wie stark hängt der Umsatz von wenigen Kunden ab?“
 - „Erstelle eine Umsatzsteuer-Übersicht nach Steuersätzen für Q1.“
 
 ## Grenzen
@@ -66,6 +66,33 @@ Beispiel-Fragen:
 - **Rate Limit:** Lexware erlaubt etwa 2 Anfragen pro Sekunde. Der Connector drosselt automatisch und wiederholt bei HTTP 429.
 - **Große Zeiträume:** Für Netto- und USt-Auswertungen lädt der Connector je Rechnung ein Detail nach. Bei vielen Rechnungen dauert das. Nutze kürzere Zeiträume.
 - **Kein Schreibzugriff** in dieser Version.
+
+## Mindestgruppengröße
+
+Auswertungen zeigen Gruppen erst ab **5 verschiedenen Kunden** (Standard). Kleinere Gruppen werden unterdrückt, weil eine Zahl aus einem oder zwei Kunden oft auf eine Person zurückführt. Der Wert ist mit `LEXWARE_MIN_GROUP` einstellbar, `1` schaltet die Schwelle aus.
+
+Die Kundenkonzentration gibt keine Namen und keine Beträge aus, nur Anteilsklassen der drei größten Kunden.
+
+Auch mit Schwelle ist eine Auswertung nicht garantiert anonym. Bei kleinen Kundenstämmen lässt sich aus Kombinationen weiterhin etwas schließen.
+
+## Personendaten reduzieren
+
+Der Connector reduziert Personendaten, bevor Claude die Ergebnisse sieht. Das ist standardmäßig an:
+
+- **Namen** (Personen, Firmen, Kontaktnamen) werden durch Pseudonyme wie `Kontakt 1` ersetzt. Ein Name bekommt in einem Prozess immer dasselbe Pseudonym, Auswertungen wie „Top-Kunden“ bleiben also lesbar.
+- **Straße, Adresszusatz und PLZ** werden entfernt. Ort und Land bleiben für regionale Auswertungen erhalten.
+- **Steuernummer und USt-IdNr.** werden entfernt.
+- **E-Mail-Adressen, IBANs, Telefonnummern und USt-IdNr.** werden auch in Freitext (Notizen, Beschreibungen) ersetzt.
+
+Nicht abgedeckt: Namen in Freitext, etwa „Rücksprache mit Frau Musterfrau“. Dafür braucht es Named-Entity-Erkennung, das ist ein eigener Schritt.
+
+**Abschalten** ist nur nötig, wenn Namen im Klartext gebraucht werden, zum Beispiel für eine Suche nach einem Kunden. Dafür `LEXWARE_REDACT=0` setzen. Bei abgeschalteter Option sieht Claude die echten Namen.
+
+Die Pseudonyme gelten nur innerhalb eines laufenden Prozesses und werden nicht gespeichert. Sie sind keine Anonymisierung im rechtlichen Sinn: pseudonymisierte Daten bleiben personenbezogen.
+
+```json
+"env": { "LEXOFFICE_API_KEY": "DEIN_API_KEY" }
+```
 
 ## Entwicklung
 
