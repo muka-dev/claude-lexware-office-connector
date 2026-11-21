@@ -2,7 +2,7 @@
 
 Alle Tools sind **nur lesend** (`readOnlyHint: true`). Datumsangaben im Format `yyyy-MM-dd`. Ohne `from`/`to` gilt das laufende Kalenderjahr bis heute.
 
-Mit `LEXWARE_REDACT=1` werden Personendaten in den Antworten reduziert, siehe README.
+Personendaten in den Antworten werden standardmäßig reduziert (Pseudonyme für Namen, Adressen und Steuer-IDs entfernt). Abschalten nur mit `LEXWARE_REDACT=0`, siehe README.
 
 Antworten kommen als JSON-Text. Fehler kommen als Tool-Fehler mit `isError: true` und einer Meldung ohne Schlüssel oder Zugangsdaten.
 

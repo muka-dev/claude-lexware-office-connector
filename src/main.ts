@@ -2,15 +2,15 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { LexwareClient } from "./lexoffice/client.js";
 import { createServer } from "./server.js";
-import { Redactor } from "./redact/index.js";
+import { Redactor, redactionEnabled } from "./redact/index.js";
 
 async function main() {
   const apiKey = process.env.LEXOFFICE_API_KEY ?? "";
   // stdout is the MCP channel: log to stderr only, and never log the key.
   const client = new LexwareClient({ apiKey });
-  // LEXWARE_REDACT=1 pseudonymizes names and removes addresses and tax IDs
-  // before results reach the model. Off by default, so name searches keep working.
-  const redactOn = ["1", "true", "yes"].includes((process.env.LEXWARE_REDACT ?? "").toLowerCase());
+  // Redaction is on by default: names become pseudonyms, addresses and tax IDs are removed
+  // before results reach the model. Set LEXWARE_REDACT=0 only if plain names are needed.
+  const redactOn = redactionEnabled(process.env.LEXWARE_REDACT);
   // One Redactor per process, so the same person gets the same pseudonym across tool calls.
   const redactor = new Redactor();
   const server = createServer({

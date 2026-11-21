@@ -79,3 +79,12 @@ export class Redactor {
     return out;
   }
 }
+
+/**
+ * Redaction is on unless LEXWARE_REDACT is explicitly set to an off value.
+ * Only switch it off when names in plain text are really needed.
+ */
+export function redactionEnabled(envValue: string | undefined): boolean {
+  const v = (envValue ?? "").trim().toLowerCase();
+  return !["0", "false", "no", "off"].includes(v);
+}

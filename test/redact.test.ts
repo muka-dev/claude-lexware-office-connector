@@ -99,3 +99,19 @@ describe("Redactor: arrays and nesting", () => {
     expect(out.content[0].totalAmount).toBe(498.8);
   });
 });
+
+describe("redactionEnabled", () => {
+  it("is on by default, also for empty values", async () => {
+    const { redactionEnabled } = await import("../src/redact/index.js");
+    expect(redactionEnabled(undefined)).toBe(true);
+    expect(redactionEnabled("")).toBe(true);
+    expect(redactionEnabled("1")).toBe(true);
+  });
+
+  it("turns off only on explicit off values", async () => {
+    const { redactionEnabled } = await import("../src/redact/index.js");
+    for (const v of ["0", "false", "no", "off", " OFF "]) {
+      expect(redactionEnabled(v)).toBe(false);
+    }
+  });
+});

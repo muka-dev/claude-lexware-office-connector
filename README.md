@@ -67,21 +67,23 @@ Beispiel-Fragen:
 - **Große Zeiträume:** Für Netto- und USt-Auswertungen lädt der Connector je Rechnung ein Detail nach. Bei vielen Rechnungen dauert das. Nutze kürzere Zeiträume.
 - **Kein Schreibzugriff** in dieser Version.
 
-## Personendaten reduzieren (optional)
+## Personendaten reduzieren
 
-Mit `LEXWARE_REDACT=1` ersetzt der Connector Personendaten, bevor Claude die Ergebnisse sieht:
+Der Connector reduziert Personendaten, bevor Claude die Ergebnisse sieht. Das ist standardmäßig an:
 
-- **Namen** (Personen, Firmen, Kontaktnamen) werden durch Pseudonyme wie `Kontakt 1` ersetzt. Ein Name bekommt in einer Sitzung immer dasselbe Pseudonym, Auswertungen wie „Top-Kunden“ bleiben also lesbar.
+- **Namen** (Personen, Firmen, Kontaktnamen) werden durch Pseudonyme wie `Kontakt 1` ersetzt. Ein Name bekommt in einem Prozess immer dasselbe Pseudonym, Auswertungen wie „Top-Kunden“ bleiben also lesbar.
 - **Straße, Adresszusatz und PLZ** werden entfernt. Ort und Land bleiben für regionale Auswertungen erhalten.
 - **Steuernummer und USt-IdNr.** werden entfernt.
 - **E-Mail-Adressen, IBANs, Telefonnummern und USt-IdNr.** werden auch in Freitext (Notizen, Beschreibungen) ersetzt.
 
 Nicht abgedeckt: Namen in Freitext, etwa „Rücksprache mit Frau Musterfrau“. Dafür braucht es Named-Entity-Erkennung, das ist ein eigener Schritt.
 
-Die Option ist standardmäßig aus, damit Suchen nach Namen funktionieren. Die Pseudonyme gelten nur innerhalb eines laufenden Prozesses und werden nicht gespeichert. Sie sind keine Anonymisierung im rechtlichen Sinn: pseudonymisierte Daten bleiben personenbezogen.
+**Abschalten** ist nur nötig, wenn Namen im Klartext gebraucht werden, zum Beispiel für eine Suche nach einem Kunden. Dafür `LEXWARE_REDACT=0` setzen. Bei abgeschalteter Option sieht Claude die echten Namen.
+
+Die Pseudonyme gelten nur innerhalb eines laufenden Prozesses und werden nicht gespeichert. Sie sind keine Anonymisierung im rechtlichen Sinn: pseudonymisierte Daten bleiben personenbezogen.
 
 ```json
-"env": { "LEXOFFICE_API_KEY": "DEIN_API_KEY", "LEXWARE_REDACT": "1" }
+"env": { "LEXOFFICE_API_KEY": "DEIN_API_KEY" }
 ```
 
 ## Entwicklung
