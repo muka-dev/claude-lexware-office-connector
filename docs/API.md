@@ -2,6 +2,8 @@
 
 Alle Tools sind **nur lesend** (`readOnlyHint: true`). Datumsangaben im Format `yyyy-MM-dd`. Ohne `from`/`to` gilt das laufende Kalenderjahr bis heute.
 
+Mit `LEXWARE_REDACT=1` werden Personendaten in den Antworten reduziert, siehe README.
+
 Antworten kommen als JSON-Text. Fehler kommen als Tool-Fehler mit `isError: true` und einer Meldung ohne Schlüssel oder Zugangsdaten.
 
 Lexware-Endpunkte, auf denen die Tools aufbauen, stehen in der [offiziellen Doku](https://developers.lexware.io/docs/#lexware-api-documentation).

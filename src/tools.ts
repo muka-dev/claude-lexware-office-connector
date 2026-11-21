@@ -15,6 +15,8 @@ export interface ToolContext {
   today?: () => Date;
   /** Upper bound of invoice detail calls per VAT summary (rate limit protection). */
   maxInvoiceDetails?: number;
+  /** Optional redaction applied to successful results before they leave the connector. */
+  redact?: (value: unknown) => unknown;
 }
 
 export interface ToolDef {
@@ -162,7 +164,7 @@ export function buildTools(ctx: ToolContext): ToolDef[] {
     handler: async (args: any) => {
       try {
         const data = await t.handler(args ?? {});
-        return data;
+        return ctx.redact ? ctx.redact(data) : data;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return { isError: true, message };

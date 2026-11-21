@@ -103,3 +103,41 @@ describe("buildTools", () => {
     expect(JSON.stringify(res)).not.toContain("test-key");
   });
 });
+
+describe("buildTools with redaction", () => {
+  it("applies ctx.redact to successful tool results", async () => {
+    const client = fakeClient();
+    client.getAllPages.mockResolvedValue([
+      { id: "1", voucherType: "invoice", voucherStatus: "open", voucherDate: "2026-02-01T00:00:00.000+01:00", totalAmount: 119, contactId: "c", contactName: "Musterfrau, Erika", openAmount: 119, currency: "EUR", voucherNumber: "RE1", archived: false, dueDate: null },
+    ]);
+    const { Redactor } = await import("../src/redact/index.js");
+    const tools = buildTools({ ...ctx(client), redact: (v) => new Redactor().redact(v) });
+    const top = tools.find((t) => t.name === "lexware_top_customers")!;
+
+    const res = (await top.handler({ from: "2026-01-01", to: "2026-03-31" })) as any[];
+
+    expect(res[0].contactName).toMatch(/^Kontakt \d+$/);
+    expect(res[0].gross).toBe(119);
+  });
+
+  it("leaves results unchanged when no redactor is configured", async () => {
+    const client = fakeClient();
+    client.getAllPages.mockResolvedValue([
+      { id: "1", voucherType: "invoice", voucherStatus: "open", voucherDate: "2026-02-01T00:00:00.000+01:00", totalAmount: 119, contactId: "c", contactName: "Musterfrau, Erika", openAmount: 119, currency: "EUR", voucherNumber: "RE1", archived: false, dueDate: null },
+    ]);
+    const tools = buildTools(ctx(client));
+    const top = tools.find((t) => t.name === "lexware_top_customers")!;
+
+    const res = (await top.handler({ from: "2026-01-01", to: "2026-03-31" })) as any[];
+
+    expect(res[0].contactName).toBe("Musterfrau, Erika");
+  });
+
+  it("does not redact error results", async () => {
+    const client = fakeClient();
+    client.getAllPages.mockRejectedValueOnce(new Error("Lexware API error 401"));
+    const tools = buildTools({ ...ctx(client), redact: (v) => v });
+    const res = await tools.find((t) => t.name === "lexware_aging_report")!.handler({});
+    expect(res).toMatchObject({ isError: true });
+  });
+});
