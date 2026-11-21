@@ -97,8 +97,8 @@ Die Pseudonyme gelten nur innerhalb eines laufenden Prozesses und werden nicht g
 ## Entwicklung
 
 ```bash
-git clone https://github.com/muka-dev/claude-lexoffice-connector.git
-cd claude-lexoffice-connector
+git clone https://github.com/muka-dev/claude-lexware-office-connector.git
+cd claude-lexware-office-connector
 npm install
 npm test          # Unit- und Integrationstests, ohne echte API
 npm run typecheck

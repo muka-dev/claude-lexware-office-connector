@@ -35,7 +35,7 @@
   "homepage": "https://m-ko.de",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/muka-dev/claude-lexoffice-connector.git"
+    "url": "git+https://github.com/muka-dev/claude-lexware-office-connector.git"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
