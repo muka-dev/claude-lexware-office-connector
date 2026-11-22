@@ -94,6 +94,16 @@ Die Pseudonyme gelten nur innerhalb eines laufenden Prozesses und werden nicht g
 "env": { "LEXOFFICE_API_KEY": "DEIN_API_KEY" }
 ```
 
+## Live-Check gegen die echte API
+
+`scripts/live-check.mjs` ruft nur lesend Profil, Belege und Auswertungen ab und gibt nur Summen und Feldnamen aus, keine Namen, Adressen oder E-Mail-Adressen. Voraussetzung: `npm run build` und ein gesetzter `LEXOFFICE_API_KEY`.
+
+```bash
+node scripts/live-check.mjs 2026-01-01 2026-12-31
+```
+
+Optional `LEXWARE_MIN_GROUP=1`, damit auch kleine Testdaten sichtbar werden.
+
 ## Entwicklung
 
 ```bash
