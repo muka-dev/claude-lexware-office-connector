@@ -54,7 +54,23 @@ async function main() {
   for (const inv of invoices) details.push(await client.get(`/invoices/${encodeURIComponent(inv.id)}`));
   if (details[0]) console.log("\n== invoice detail field names:", keysOf(details[0]).join(", "));
   console.log("vat summary:", JSON.stringify(vatSummary(details, minGroup)));
-  console.log("invoices without tax rows:", JSON.stringify(missingTaxRows(details, minGroup)));
+
+  // 5. per invoice: list vs detail figures, no names or addresses
+  console.log("\n== per invoice (number, list total, detail net/gross/tax, tax rows)");
+  for (const d of details) {
+    const listItem = invoices.find((i) => i.id === d.id) ?? {};
+    const tp = d.totalPrice ?? {};
+    console.log(JSON.stringify({
+      voucherNumber: d.voucherNumber,
+      voucherStatus: d.voucherStatus,
+      listTotalAmount: listItem.totalAmount,
+      detailNet: tp.totalNetAmount,
+      detailGross: tp.totalGrossAmount,
+      detailTax: tp.totalTaxAmount,
+      taxRows: Array.isArray(d.taxAmounts) ? d.taxAmounts.length : "missing",
+      taxRates: Array.isArray(d.taxAmounts) ? d.taxAmounts.map((t) => t.taxRatePercentage) : null,
+    }));
+  }
 }
 
 main().catch((err) => {
