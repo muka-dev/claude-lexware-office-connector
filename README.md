@@ -143,6 +143,7 @@ Ohne `LEXOFFICE_API_KEY` bricht das Skript ab und sendet nichts.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): Aufbau, Datenfluss und Entscheidungen, mit Diagrammen
 - [docs/SECURITY-PRIVACY.md](docs/SECURITY-PRIVACY.md): Datenflüsse, Schutzmaßnahmen und bekannte Lücken
 - [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md): Fehlerbilder und Lösungen
+- [docs/RELEASING.md](docs/RELEASING.md): Veröffentlichen auf npm, Zugang und geplante Umstellung
 
 ## Lizenz
 
