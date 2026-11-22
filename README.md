@@ -1,52 +1,79 @@
 # claude-lexware-office-connector
 
-Ein **MCP-Connector für Lexware Office** (ehemals lexoffice), damit Claude Kennzahlen, Kunden, Rechnungen und Auswertungen lesen kann. Gebaut von [m-ko.de](https://m-ko.de), Teil der Connector-Reihe für deutsche Mittelstands-Software.
+Ein MCP-Connector, mit dem Claude Belege, Kunden und Auswertungen aus **Lexware Office** (ehemals lexoffice) lesen kann. Gebaut von [m-ko.de](https://m-ko.de).
 
 - **Nur lesend.** Keine Rechnungen anlegen, ändern oder finalisieren.
-- **Läuft lokal.** Dein API-Key und deine Daten bleiben auf deinem Rechner. Es gibt keinen Server von uns dazwischen.
-- **Ohne Eingangs- und Buchungsbelege.** Lohn- und Buchungsdaten sind über diesen Connector nicht abrufbar.
-- **Kostenlos und MIT-lizenziert.**
+- **Läuft auf deinem Rechner.** Dein API-Key geht nur an die Lexware-API, nirgendwo anders hin. Es gibt keinen Server von uns dazwischen.
+- **Standardmäßig datensparsam.** Namen werden durch Platzhalter ersetzt, Adressen und Steuer-IDs entfernt, kleine Gruppen ausgeblendet.
+- **Kostenlos, MIT-lizenziert.**
 
-> **Datenschutz-Hinweis:** Lokal heißt: Connector und API-Key bleiben bei dir. Sobald Claude die Ergebnisse einer Abfrage verarbeitet, gehen diese Daten an den Modell-Anbieter Anthropic. Prüfe vor dem Einsatz, ob das für deine Daten zulässig ist.
+> **Wichtig:** Was Claude aus dem Connector erhält, geht an den Modell-Anbieter, sobald Claude es verarbeitet. Der Connector verringert, was dabei an Personendaten übertragen wird. Er macht die Daten nicht anonym. Details: [docs/SECURITY-PRIVACY.md](docs/SECURITY-PRIVACY.md).
 
-## Voraussetzungen
+## Inhalt
 
-1. **Node.js 22 oder neuer** (`node -v`)
-2. **Einen Lexware-Office-API-Key.** Erzeuge ihn in Lexware Office unter [app.lexware.de/addons/public-api](https://app.lexware.de/addons/public-api). Der Key ist privat und gibt Lesezugriff auf deine Firmendaten. Behandle ihn wie ein Passwort.
+- [Schnellstart](#schnellstart)
+- [Konfiguration](#konfiguration)
+- [Was der Connector kann](#was-der-connector-kann)
+- [Datenschutz in Kürze](#datenschutz-in-kürze)
+- [Grenzen](#grenzen)
+- [Entwicklung und Tests](#entwicklung-und-tests)
+- [Weitere Dokumentation](#weitere-dokumentation)
 
-## Installation
+## Schnellstart
 
-Der Connector läuft über `npx` und braucht keine Installation. Trage ihn in deiner Claude-Konfiguration ein.
+Du brauchst **Node.js 22 oder neuer** und einen **Lexware-Office-API-Key**.
 
-### Claude Desktop
+1. **API-Key erzeugen:** In Lexware Office unter [app.lexware.de/addons/public-api](https://app.lexware.de/addons/public-api). Der Key gibt Lesezugriff auf deine Firmendaten. Behandle ihn wie ein Passwort.
+2. **Claude einrichten.** Ein Eintrag in der Konfiguration von Claude Desktop:
 
-Öffne die Datei `claude_desktop_config.json`. Den Weg dorthin findest du in den Einstellungen der Desktop-App unter dem Punkt für Entwickler bzw. MCP-Server; die Menübezeichnungen können je nach Version abweichen. Ergänze:
+   ```json
+   {
+     "mcpServers": {
+       "lexware-office": {
+         "command": "npx",
+         "args": ["-y", "claude-lexware-office-connector"],
+         "env": { "LEXOFFICE_API_KEY": "DEIN_API_KEY" }
+       }
+     }
+   }
+   ```
+
+   Den Speicherort der Datei `claude_desktop_config.json` findest du in den Einstellungen der Desktop-App unter dem Punkt für Entwickler bzw. MCP-Server. Die Bezeichnungen können je nach Version abweichen. Danach Claude Desktop neu starten.
+
+3. **Oder mit Claude Code:**
+
+   ```bash
+   claude mcp add --env LEXOFFICE_API_KEY=DEIN_API_KEY lexware-office -- npx -y claude-lexware-office-connector
+   ```
+
+4. **Ausprobieren:** Frag Claude zum Beispiel „Welche Rechnungen sind überfällig?“ oder „Wie hat sich der Umsatz im ersten Quartal entwickelt?“.
+
+Ob die Verbindung steht, siehst du in der Tool-Liste der Anwendung. Dort müssen die Tools `lexware_*` erscheinen. Wenn nicht, hilft [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
+
+## Konfiguration
+
+Alles wird über Umgebungsvariablen gesteuert. Nur `LEXOFFICE_API_KEY` ist Pflicht.
+
+| Variable | Standard | Wirkung |
+|---|---|---|
+| `LEXOFFICE_API_KEY` | – | Pflicht. Der API-Key aus Lexware Office. Ohne ihn startet der Connector nicht. |
+| `LEXWARE_REDACT` | an | Namen werden zu Platzhaltern (`Kontakt 1`), Straße, Adresszusatz, PLZ, Steuernummer und USt-IdNr. werden entfernt. Auf `0`, `false`, `no` oder `off` setzen, um es abzuschalten. |
+| `LEXWARE_MIN_GROUP` | `5` | Mindestzahl verschiedener Kunden (bei USt: Rechnungen), damit eine Auswertung angezeigt wird. `1` schaltet die Schwelle aus. Ungültige Werte fallen auf `5` zurück. |
+
+Die Werte stehen im `env`-Block der Konfiguration, zum Beispiel:
 
 ```json
-{
-  "mcpServers": {
-    "lexware-office": {
-      "command": "npx",
-      "args": ["-y", "claude-lexware-office-connector"],
-      "env": {
-        "LEXOFFICE_API_KEY": "DEIN_API_KEY"
-      }
-    }
-  }
+"env": {
+  "LEXOFFICE_API_KEY": "DEIN_API_KEY",
+  "LEXWARE_MIN_GROUP": "5"
 }
 ```
 
-Starte Claude Desktop danach neu.
+Der Connector liest die Variablen beim Start. Nach einer Änderung muss die Anwendung neu gestartet werden.
 
-### Claude Code
+## Was der Connector kann
 
-```bash
-claude mcp add --env LEXOFFICE_API_KEY=DEIN_API_KEY lexware-office -- npx -y claude-lexware-office-connector
-```
-
-## Was Claude damit kann
-
-Die vollständige Tool-Referenz mit Parametern steht in [docs/API.md](docs/API.md).
+Die vollständige Referenz mit Parametern und Antwortformen steht in [docs/API.md](docs/API.md).
 
 | Bereich | Tools |
 |---|---|
@@ -54,57 +81,37 @@ Die vollständige Tool-Referenz mit Parametern steht in [docs/API.md](docs/API.m
 | Belege | `lexware_list_vouchers`, `lexware_get_invoice` |
 | Auswertungen | `lexware_aging_report`, `lexware_revenue_by_month`, `lexware_customer_concentration`, `lexware_vat_summary` |
 
-Beispiel-Fragen:
+Der Connector liest nur Ausgangsbelege. Eingangsbelege, Buchungsbelege, Gehaltsbuchungen und Lohndaten sind über die Tools nicht abrufbar.
 
-- „Welche Rechnungen sind seit mehr als 30 Tagen überfällig?“
-- „Wie hat sich der Umsatz im ersten Quartal entwickelt?“
-- „Wie stark hängt der Umsatz von wenigen Kunden ab?“
-- „Erstelle eine Umsatzsteuer-Übersicht nach Steuersätzen für Q1.“
+**Beispiele:**
+- „Welche offenen Posten sind älter als 30 Tage?“ → `lexware_aging_report`
+- „Wie hängt der Umsatz von wenigen Kunden ab?“ → `lexware_customer_concentration`, liefert nur Anteilsklassen
+- „Erstelle eine USt-Übersicht für Q1.“ → `lexware_vat_summary`, mit separater Liste der Rechnungen ohne Steuerzeilen
+
+## Datenschutz in Kürze
+
+| Was | Standard | Details |
+|---|---|---|
+| Namen | Platzhalter (`Kontakt 1`) | Ein Name bekommt in einem Prozess immer denselben Platzhalter. |
+| Adressen | Straße, Adresszusatz und PLZ entfernt | Ort und Land bleiben für regionale Auswertungen. |
+| Steuer-IDs | entfernt | Steuernummer und USt-IdNr. |
+| Freitext | E-Mail, IBAN, Telefon und USt-IdNr. ersetzt | Gilt für alle Textfelder, auch Notizen. |
+| Kleine Gruppen | ausgeblendet | Unter fünf Kunden bzw. Rechnungen wird nichts angezeigt. |
+| Speicherung | keine | Pseudonyme und Cache nur im Arbeitsspeicher des laufenden Prozesses. Keine Logdateien, keine Telemetrie. |
+
+Die vollständige Beschreibung, inklusive Datenflüssen und bekannter Lücken, steht in [docs/SECURITY-PRIVACY.md](docs/SECURITY-PRIVACY.md).
 
 ## Grenzen
 
-- **Rate Limit:** Lexware erlaubt etwa 2 Anfragen pro Sekunde. Der Connector drosselt automatisch und wiederholt bei HTTP 429.
-- **Große Zeiträume:** Für Netto- und USt-Auswertungen lädt der Connector je Rechnung ein Detail nach. Bei vielen Rechnungen dauert das. Nutze kürzere Zeiträume.
+- **Freitext-Namen** wie „Rücksprache mit Frau Musterfrau“ werden nicht erkannt.
+- **Lexware-IDs, Rechnungsnummern, Datumsangaben und Beträge** bleiben in den Antworten. Zusammen können sie bei kleinen Kundenstämmen auf eine Firma hinweisen.
+- **Pseudonyme** sind keine Anonymisierung im rechtlichen Sinn. Pseudonymisierte Daten bleiben personenbezogen.
+- **Rate Limit:** Lexware erlaubt etwa zwei Anfragen pro Sekunde. Der Connector drosselt sich selbst und wiederholt bei HTTP 429.
+- **Große Zeiträume:** Lexware begrenzt die Belegliste auf 10.000 Einträge pro Abfrage. Bei mehr Belegen den Zeitraum verkleinern.
+- **USt-Übersicht:** Sie ist eine Vorbereitungshilfe, keine steuerliche Beurteilung. Rechnungen ohne Steuerzeilen werden getrennt ausgewiesen, nicht stillschweigend ausgelassen.
 - **Kein Schreibzugriff** in dieser Version.
 
-## Mindestgruppengröße
-
-Auswertungen zeigen Gruppen erst ab **5 verschiedenen Kunden** (Standard). Kleinere Gruppen werden unterdrückt, weil eine Zahl aus einem oder zwei Kunden oft auf eine Person zurückführt. Der Wert ist mit `LEXWARE_MIN_GROUP` einstellbar, `1` schaltet die Schwelle aus.
-
-Die Kundenkonzentration gibt keine Namen und keine Beträge aus, nur Anteilsklassen der drei größten Kunden.
-
-Auch mit Schwelle ist eine Auswertung nicht garantiert anonym. Bei kleinen Kundenstämmen lässt sich aus Kombinationen weiterhin etwas schließen.
-
-## Personendaten reduzieren
-
-Der Connector reduziert Personendaten, bevor Claude die Ergebnisse sieht. Das ist standardmäßig an:
-
-- **Namen** (Personen, Firmen, Kontaktnamen) werden durch Pseudonyme wie `Kontakt 1` ersetzt. Ein Name bekommt in einem Prozess immer dasselbe Pseudonym, Auswertungen wie „Top-Kunden“ bleiben also lesbar.
-- **Straße, Adresszusatz und PLZ** werden entfernt. Ort und Land bleiben für regionale Auswertungen erhalten.
-- **Steuernummer und USt-IdNr.** werden entfernt.
-- **E-Mail-Adressen, IBANs, Telefonnummern und USt-IdNr.** werden auch in Freitext (Notizen, Beschreibungen) ersetzt.
-
-Nicht abgedeckt: Namen in Freitext, etwa „Rücksprache mit Frau Musterfrau“. Dafür braucht es Named-Entity-Erkennung, das ist ein eigener Schritt.
-
-**Abschalten** ist nur nötig, wenn Namen im Klartext gebraucht werden, zum Beispiel für eine Suche nach einem Kunden. Dafür `LEXWARE_REDACT=0` setzen. Bei abgeschalteter Option sieht Claude die echten Namen.
-
-Die Pseudonyme gelten nur innerhalb eines laufenden Prozesses und werden nicht gespeichert. Sie sind keine Anonymisierung im rechtlichen Sinn: pseudonymisierte Daten bleiben personenbezogen.
-
-```json
-"env": { "LEXOFFICE_API_KEY": "DEIN_API_KEY" }
-```
-
-## Live-Check gegen die echte API
-
-`scripts/live-check.mjs` ruft nur lesend Profil, Belege und Auswertungen ab und gibt nur Summen und Feldnamen aus, keine Namen, Adressen oder E-Mail-Adressen. Voraussetzung: `npm run build` und ein gesetzter `LEXOFFICE_API_KEY`.
-
-```bash
-node scripts/live-check.mjs 2026-01-01 2026-12-31
-```
-
-Optional `LEXWARE_MIN_GROUP=1`, damit auch kleine Testdaten sichtbar werden.
-
-## Entwicklung
+## Entwicklung und Tests
 
 ```bash
 git clone https://github.com/muka-dev/claude-lexware-office-connector.git
@@ -115,14 +122,30 @@ npm run typecheck
 npm run build
 ```
 
-Die Tests laufen ohne API-Key. Ein Live-Test gegen die echte API ist in dieser Version nicht enthalten.
+Die Tests laufen ohne API-Key und ohne Netzzugriff. Der Connector ist mit Vitest getestet: Client, Auswertungen, Tool-Schicht, Redaktion, Schwellen und der MCP-Server über einen In-Memory-Transport.
+
+Architektur und Entscheidungen stehen in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+### Live-Check gegen die echte API
+
+`scripts/live-check.mjs` ruft nur lesend Profil, Belege und Auswertungen ab. Es gibt Summen, Feldnamen und Rechnungsnummern aus, keine Namen, Adressen oder E-Mail-Adressen.
+
+```bash
+npm run build
+node scripts/live-check.mjs 2026-01-01 2026-12-31
+```
+
+Ohne `LEXOFFICE_API_KEY` bricht das Skript ab und sendet nichts.
+
+## Weitere Dokumentation
+
+- [docs/API.md](docs/API.md): Tool-Referenz mit Parametern und Antwortformen
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): Aufbau, Datenfluss und Entscheidungen, mit Diagrammen
+- [docs/SECURITY-PRIVACY.md](docs/SECURITY-PRIVACY.md): Datenflüsse, Schutzmaßnahmen und bekannte Lücken
+- [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md): Fehlerbilder und Lösungen
 
 ## Lizenz
 
 MIT, siehe [LICENSE](LICENSE).
 
-## Weitere Informationen
-
-- Projektseite und weitere Connectoren: [m-ko.de](https://m-ko.de)
-- Offizielle Lexware-API-Doku: [developers.lexware.io](https://developers.lexware.io/docs/#lexware-api-documentation)
-- Kein offizielles Produkt von Lexware. Lexware und lexoffice sind Marken der Lexware GmbH & Co. KG.
+Lexware und lexoffice sind Marken der Lexware GmbH & Co. KG. Dieses Projekt ist nicht mit Lexware verbunden.
