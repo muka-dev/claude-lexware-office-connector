@@ -37,8 +37,10 @@ export interface VoucherListItem {
 
 export interface InvoiceDetail {
   id: string;
+  voucherNumber?: string;
   voucherStatus: string;
   taxAmounts: { taxRatePercentage: number; taxAmount: number; netAmount: number }[];
+  totalPrice?: { totalNetAmount: number; totalGrossAmount: number; totalTaxAmount: number };
 }
 
 export function isSalesVoucherType(type: string): boolean {
@@ -186,4 +188,27 @@ export function parseMinGroup(envValue: string | undefined): number {
   if (!/^\d+$/.test(v)) return DEFAULT_MIN_GROUP;
   const n = Number(v);
   return n >= 1 ? n : DEFAULT_MIN_GROUP;
+}
+
+export interface MissingTaxRows {
+  count: number;
+  net: number | null;
+  voucherNumbers: string[] | null;
+  suppressed?: boolean;
+}
+
+/**
+ * Invoices that have no tax rows at all. They are left out of the VAT summary by design,
+ * because no tax rate is known for them. This reports them separately, so the gap
+ * between the summary and the invoice list is visible. Net, numbers and count are
+ * suppressed below the minimum group size.
+ */
+export function missingTaxRows(invoices: InvoiceDetail[], minGroup = DEFAULT_MIN_GROUP): MissingTaxRows {
+  const missing = invoices.filter(
+    (i) => !EXCLUDED_STATUS.has(i.voucherStatus) && (!i.taxAmounts || i.taxAmounts.length === 0),
+  );
+  if (missing.length === 0) return { count: 0, net: 0, voucherNumbers: [] };
+  if (missing.length < minGroup) return { count: missing.length, net: null, voucherNumbers: null, suppressed: true };
+  const net = round2(missing.reduce((sum, i) => sum + (i.totalPrice?.totalNetAmount ?? 0), 0));
+  return { count: missing.length, net, voucherNumbers: missing.map((i) => i.voucherNumber ?? i.id) };
 }

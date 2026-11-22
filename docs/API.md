@@ -145,7 +145,7 @@ Netto- und Steuerbeträge je Steuersatz für Umsatzsteuer-Übersichten. Lädt je
 | `from` | Datum | nein | Belegdatum ab |
 | `to` | Datum | nein | Belegdatum bis |
 
-Antwort: Liste aus `{ taxRatePercentage, net, tax }`. Ein Steuersatz mit weniger als 5 Rechnungen liefert `net: null, tax: null, suppressed: true`. Entwürfe und stornierte Belege sind ausgenommen.
+Antwort: `rates` als Liste aus `{ taxRatePercentage, net, tax }`, dazu `invoicesWithoutTaxRows` mit `count`, `net` und `voucherNumbers` für Rechnungen ohne Steuerzeilen. Diese werden nicht in `rates` eingerechnet, weil kein Steuersatz bekannt ist. Die Angaben entfallen, wenn die Anzahl unter der Mindestgruppe liegt. Ein Steuersatz mit weniger als 5 Rechnungen liefert `net: null, tax: null, suppressed: true`. Entwürfe und stornierte Belege sind ausgenommen.
 
 > Die Übersicht ist eine Hilfe für die Vorbereitung, kein Steuerbescheid. Prüfe sie mit deiner Steuerberatung.
 

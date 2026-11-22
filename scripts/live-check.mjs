@@ -3,7 +3,7 @@
 // Prints only aggregates and field names, never names, addresses or e-mail addresses.
 // Usage: npm run build && node scripts/live-check.mjs [from yyyy-MM-dd] [to yyyy-MM-dd]
 import { LexwareClient } from "../dist/lexoffice/client.js";
-import { agingReport, revenueByMonth, customerConcentration, vatSummary, SALES_VOUCHER_TYPES, parseMinGroup } from "../dist/analytics/index.js";
+import { agingReport, revenueByMonth, customerConcentration, vatSummary, missingTaxRows, SALES_VOUCHER_TYPES, parseMinGroup } from "../dist/analytics/index.js";
 
 const apiKey = process.env.LEXOFFICE_API_KEY;
 if (!apiKey) {

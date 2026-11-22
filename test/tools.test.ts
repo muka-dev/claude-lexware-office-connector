@@ -85,11 +85,12 @@ describe("buildTools", () => {
     ]);
     const tool = buildTools(ctx(client)).find((t) => t.name === "lexware_vat_summary")!;
 
-    const first = await tool.handler({ from: "2026-01-01", to: "2026-03-31" });
-    const second = await tool.handler({ from: "2026-01-01", to: "2026-03-31" });
+    const first = (await tool.handler({ from: "2026-01-01", to: "2026-03-31" })) as any;
+    const second = (await tool.handler({ from: "2026-01-01", to: "2026-03-31" })) as any;
 
-    expect(first).toEqual([{ taxRatePercentage: 19, net: 100, tax: 19 }]);
+    expect(first.rates).toEqual([{ taxRatePercentage: 19, net: 100, tax: 19 }]);
     expect(second).toEqual(first);
+    expect(first.invoicesWithoutTaxRows.count).toBe(0);
     const invoiceCalls = client.get.mock.calls.filter(([p]: [string]) => p.startsWith("/invoices/"));
     expect(invoiceCalls.length).toBe(1); // second run served from cache
   });
@@ -152,8 +153,8 @@ describe("minimum group size defaults", () => {
     ]);
     const { minGroupSize: _omit, ...withoutThreshold } = ctx(client);
     const tools = buildTools(withoutThreshold as any);
-    const res = (await tools.find((t) => t.name === "lexware_vat_summary")!.handler({ from: "2026-01-01", to: "2026-03-31" })) as any[];
-    expect(res[0]).toMatchObject({ taxRatePercentage: 19, net: null, tax: null, suppressed: true });
+    const res = (await tools.find((t) => t.name === "lexware_vat_summary")!.handler({ from: "2026-01-01", to: "2026-03-31" })) as any;
+    expect(res.rates[0]).toMatchObject({ taxRatePercentage: 19, net: null, tax: null, suppressed: true });
   });
 
   it("customer concentration returns no names", async () => {
@@ -166,5 +167,27 @@ describe("minimum group size defaults", () => {
     const res = (await tools.find((t) => t.name === "lexware_customer_concentration")!.handler({ from: "2026-01-01", to: "2026-03-31" })) as any;
     expect(res.customerCount).toBe(6);
     expect(JSON.stringify(res)).not.toMatch(/Firma/);
+  });
+});
+
+describe("lexware_vat_summary reports invoices without tax rows", () => {
+  it("does not drop an invoice without tax rows silently", async () => {
+    const client = fakeClient();
+    client.getAllPages.mockResolvedValue([
+      { id: "inv-1", voucherType: "invoice", voucherStatus: "open", voucherDate: "2026-02-01T00:00:00.000+01:00", totalAmount: 790, contactId: "c", contactName: "A", openAmount: 790, currency: "EUR", voucherNumber: "RE0006", archived: false, dueDate: null },
+    ]);
+    client.get.mockImplementation(async (path: string) => ({
+      id: "inv-1",
+      voucherNumber: "RE0006",
+      voucherStatus: "open",
+      taxAmounts: [],
+      totalPrice: { totalNetAmount: 790, totalGrossAmount: 790, totalTaxAmount: 0 },
+    }));
+    const tool = buildTools(ctx(client)).find((t) => t.name === "lexware_vat_summary")!;
+
+    const res = (await tool.handler({ from: "2026-01-01", to: "2026-12-31" })) as any;
+
+    expect(res.rates).toEqual([]);
+    expect(res.invoicesWithoutTaxRows).toEqual({ count: 1, net: 790, voucherNumbers: ["RE0006"] });
   });
 });

@@ -5,6 +5,7 @@ import {
   revenueByMonth,
   customerConcentration,
   vatSummary,
+  missingTaxRows,
   DEFAULT_MIN_GROUP,
   SALES_VOUCHER_TYPES,
   type InvoiceDetail,
@@ -144,7 +145,7 @@ export function buildTools(ctx: ToolContext): ToolDef[] {
     },
     {
       name: "lexware_vat_summary",
-      description: "Net and VAT totals per tax rate for a period (for Umsatzsteuer overviews). Loads invoice details, cached per session; capped at a fixed number of detail calls.",
+      description: "Net and VAT totals per tax rate for a period (for Umsatzsteuer overviews). Invoices without any tax rows are reported separately in invoicesWithoutTaxRows, not dropped. Loads invoice details, cached per session; capped at a fixed number of detail calls.",
       inputSchema: { from: isoDate.optional(), to: isoDate.optional() },
       handler: async (args) => {
         const items = await listSales({ ...args, voucherType: ["invoice", "creditnote"] });
@@ -154,7 +155,7 @@ export function buildTools(ctx: ToolContext): ToolDef[] {
         }
         const details: InvoiceDetail[] = [];
         for (const c of candidates) details.push(await invoiceDetail(c.id));
-        return vatSummary(details, minGroup);
+        return { rates: vatSummary(details, minGroup), invoicesWithoutTaxRows: missingTaxRows(details, minGroup) };
       },
     },
   ];
