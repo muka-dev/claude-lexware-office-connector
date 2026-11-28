@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  # Dependabot: patch/minor updates and all GitHub Actions updates are merged
+  # once `check` is green. Other major updates get the label "major-update".
+  automerge:
+    needs: check
+    if: github.event_name == 'pull_request' && github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      PR: ${{ github.event.pull_request.html_url }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - id: meta
+        uses: dependabot/fetch-metadata@v2
+      - if: steps.meta.outputs.update-type != 'version-update:semver-major' || steps.meta.outputs.package-ecosystem == 'github_actions'
+        run: gh pr merge --squash --delete-branch "$PR"
+      - if: steps.meta.outputs.update-type == 'version-update:semver-major' && steps.meta.outputs.package-ecosystem != 'github_actions'
+        run: |
+          gh label create major-update --color B60205 --description "Major update, review by hand" --force -R "$GITHUB_REPOSITORY"
+          gh pr edit "$PR" --add-label major-update
